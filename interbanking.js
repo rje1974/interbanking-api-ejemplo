@@ -23,19 +23,102 @@
 require('dotenv').config();
 const axios = require('axios');
 
-// Credenciales desde .env (nunca hardcodear)
-const {
-  IB_CLIENT_ID,         // API Key - generada al crear la app en el portal
-  IB_CLIENT_SECRET,     // API Secret - se muestra 1 sola vez al crear la app
-  IB_REDIRECT_URL,      // URL de redireccion OAuth configurada en el portal
-  IB_CUSTOMER_ID,       // Codigo de suscriptor/abonado en Interbanking
-  IB_TOKEN_URL,         // https://auth.interbanking.com.ar/cas/oidc/accessToken
-  IB_API_BASE_URL,      // https://api-gw.interbanking.com.ar/api/prod/v1
-} = process.env;
+const DEFAULT_TOKEN_URL = 'https://auth.interbanking.com.ar/cas/oidc/accessToken';
+const DEFAULT_API_BASE_URL = 'https://api-gw.interbanking.com.ar/api/prod/v1';
+const REQUIRED_ENV = ['IB_CLIENT_ID', 'IB_CLIENT_SECRET', 'IB_REDIRECT_URL', 'IB_CUSTOMER_ID'];
 
 // Cache del token - evita pedir uno nuevo en cada llamada
 let accessToken = null;
 let tokenExpiry = null;
+
+function readEnv(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+/**
+ * Lee y valida la configuracion requerida antes de llamar a Interbanking.
+ * Esto evita errores opacos cuando falta una credencial o una URL esta mal.
+ *
+ * @param {NodeJS.ProcessEnv|Object} [env=process.env]
+ * @returns {Object}
+ */
+function getConfig(env = process.env) {
+  const missing = REQUIRED_ENV.filter(name => !readEnv(env[name]));
+  if (missing.length > 0) {
+    throw new Error(`Faltan variables de entorno requeridas: ${missing.join(', ')}`);
+  }
+
+  const redirectUrl = readEnv(env.IB_REDIRECT_URL);
+  if (!redirectUrl.startsWith('https://')) {
+    throw new Error('IB_REDIRECT_URL debe incluir https:// y coincidir con la Redirect URL del portal');
+  }
+
+  return {
+    clientId: readEnv(env.IB_CLIENT_ID),
+    clientSecret: readEnv(env.IB_CLIENT_SECRET),
+    redirectUrl,
+    customerId: readEnv(env.IB_CUSTOMER_ID),
+    tokenUrl: readEnv(env.IB_TOKEN_URL) || DEFAULT_TOKEN_URL,
+    apiBaseUrl: readEnv(env.IB_API_BASE_URL) || DEFAULT_API_BASE_URL,
+  };
+}
+
+function getApiBaseUrl(config) {
+  return config.apiBaseUrl.replace(/\/+$/, '');
+}
+
+function getMovementsBaseUrl(config) {
+  return getApiBaseUrl(config).replace(/\/v1$/, '');
+}
+
+function parseIsoDate(value, name) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error(`${name} debe tener formato YYYY-MM-DD`);
+  }
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || toIsoDate(date) !== value) {
+    throw new Error(`${name} no es una fecha valida`);
+  }
+  return date;
+}
+
+function toIsoDate(date) {
+  return date.toISOString().split('T')[0];
+}
+
+function buildDateChunks(dateSince, dateUntil, maxDays = 60) {
+  if (!Number.isInteger(maxDays) || maxDays <= 0) {
+    throw new Error('maxDays debe ser un entero mayor a 0');
+  }
+
+  const start = parseIsoDate(dateSince, 'dateSince');
+  const end = parseIsoDate(dateUntil, 'dateUntil');
+  if (start > end) {
+    throw new Error('dateSince no puede ser posterior a dateUntil');
+  }
+
+  const chunks = [];
+  let chunkStart = new Date(start);
+  while (chunkStart <= end) {
+    const chunkEnd = new Date(chunkStart);
+    chunkEnd.setUTCDate(chunkEnd.getUTCDate() + maxDays - 1);
+    if (chunkEnd > end) chunkEnd.setTime(end.getTime());
+
+    chunks.push({
+      since: toIsoDate(chunkStart),
+      until: toIsoDate(chunkEnd),
+    });
+
+    chunkStart = new Date(chunkEnd);
+    chunkStart.setUTCDate(chunkStart.getUTCDate() + 1);
+  }
+
+  return chunks;
+}
+
+function accountKey(account) {
+  return [account.bank_number, account.account_type, account.currency, account.account_number].join(':');
+}
 
 /**
  * Obtiene un token OAuth2 usando el flujo client_credentials.
@@ -58,16 +141,18 @@ async function getToken() {
     return accessToken;
   }
 
+  const config = getConfig();
+
   // Construir query string con todos los parametros OAuth2
   const params = new URLSearchParams({
     scope: 'info-financiera',           // Scope requerido para APIs financieras
-    client_id: IB_CLIENT_ID,
-    client_secret: IB_CLIENT_SECRET,
+    client_id: config.clientId,
+    client_secret: config.clientSecret,
     grant_type: 'client_credentials',   // Flujo maquina-a-maquina
   });
 
   // Parametros van en la URL, NO en el body (requisito de Interbanking)
-  const url = `${IB_TOKEN_URL}?${params.toString()}`;
+  const url = `${config.tokenUrl}?${params.toString()}`;
 
   const response = await axios.post(url, null, {
     headers: {
@@ -75,7 +160,7 @@ async function getToken() {
       'Accept': 'application/json',
       // 'service' DEBE coincidir con la Redirect URL del portal.
       // DEBE incluir https:// o te da invalid_grant.
-      'service': IB_REDIRECT_URL,
+      'service': config.redirectUrl,
     },
     timeout: 30000,
   });
@@ -109,17 +194,18 @@ async function getToken() {
  */
 async function apiRequest(method, path, queryParams = {}, data = null) {
   const token = await getToken();
+  const configValues = getConfig();
 
   // customer-id es OBLIGATORIO en cada llamada, como query parameter
-  const params = { 'customer-id': IB_CUSTOMER_ID, ...queryParams };
+  const params = { 'customer-id': configValues.customerId, ...queryParams };
 
   const config = {
     method,
-    url: `${IB_API_BASE_URL}${path}`,
+    url: `${getApiBaseUrl(configValues)}${path}`,
     params,   // Axios los manda como query parameters (?customer-id=xxx&...)
     headers: {
       'Authorization': `Bearer ${token}`,     // Token OAuth2
-      'client_id': IB_CLIENT_ID,              // Requerido por IBM API Connect
+      'client_id': configValues.clientId,     // Requerido por IBM API Connect
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
@@ -186,24 +272,7 @@ async function getBalances(queryParams = {}) {
  */
 async function getBalancesRange(dateSince, dateUntil) {
   const CHUNK_DAYS = 60; // Margen por debajo del limite de 64 dias
-  const start = new Date(dateSince);
-  const end = new Date(dateUntil);
-
-  // Armar lista de chunks de fechas
-  const chunks = [];
-  let chunkStart = new Date(start);
-  while (chunkStart < end) {
-    const chunkEnd = new Date(chunkStart);
-    chunkEnd.setDate(chunkEnd.getDate() + CHUNK_DAYS);
-    if (chunkEnd > end) chunkEnd.setTime(end.getTime());
-    chunks.push({
-      since: chunkStart.toISOString().split('T')[0],
-      until: chunkEnd.toISOString().split('T')[0],
-    });
-    // Siguiente chunk empieza el dia despues (evitar overlap)
-    chunkStart = new Date(chunkEnd);
-    chunkStart.setDate(chunkStart.getDate() + 1);
-  }
+  const chunks = buildDateChunks(dateSince, dateUntil, CHUNK_DAYS);
 
   console.log(`Consultando ${chunks.length} chunks para rango ${dateSince} a ${dateUntil}...`);
 
@@ -223,18 +292,25 @@ async function getBalancesRange(dateSince, dateUntil) {
       mergedResult.general_data.date_until = dateUntil;
     } else {
       // Chunks siguientes: mergear historical_balances en cada cuenta
-      for (let i = 0; i < data.accounts.length; i++) {
+      const accountsByKey = new Map(mergedResult.accounts.map(account => [accountKey(account), account]));
+      for (const account of data.accounts) {
+        const existingAccount = accountsByKey.get(accountKey(account));
+        if (!existingAccount) {
+          mergedResult.accounts.push(account);
+          continue;
+        }
+
         const existingDates = new Set(
-          mergedResult.accounts[i].historical_balances.map(h => h.operation_date)
+          existingAccount.historical_balances.map(h => h.operation_date)
         );
-        for (const entry of data.accounts[i].historical_balances) {
+        for (const entry of account.historical_balances) {
           if (!existingDates.has(entry.operation_date)) {
-            mergedResult.accounts[i].historical_balances.push(entry);
+            existingAccount.historical_balances.push(entry);
           }
         }
         // Actualizar saldos actuales con los del ultimo chunk
-        mergedResult.accounts[i].balances = data.accounts[i].balances;
-        mergedResult.accounts[i].row_date = data.accounts[i].row_date;
+        existingAccount.balances = account.balances;
+        existingAccount.row_date = account.row_date;
       }
     }
   }
@@ -284,6 +360,7 @@ async function getBalancesRange(dateSince, dateUntil) {
  */
 async function getMovements(accountNumber, bankNumber, options = {}) {
   const token = await getToken();
+  const configValues = getConfig();
   const {
     dateSince, dateUntil,
     movementType = 'anteriores',
@@ -294,7 +371,7 @@ async function getMovements(accountNumber, bankNumber, options = {}) {
   } = options;
 
   const params = {
-    'customer-id': IB_CUSTOMER_ID,
+    'customer-id': configValues.customerId,
     'bank-number': bankNumber,
     'account-type': accountType,
     'currency': currency,
@@ -304,16 +381,15 @@ async function getMovements(accountNumber, bankNumber, options = {}) {
   if (dateSince) params['date-since'] = dateSince;
   if (dateUntil) params['date-until'] = dateUntil;
 
-  // IMPORTANTE: NO usar IB_API_BASE_URL aca porque termina en /v1
-  // y el path ya incluye /v1, lo que duplicaria el segmento y daria 404.
-  const baseUrl = 'https://api-gw.interbanking.com.ar/api/prod';
+  // IMPORTANTE: movimientos necesita la base sin /v1 porque el path ya lo incluye.
+  const baseUrl = getMovementsBaseUrl(configValues);
   const url = `${baseUrl}/v1/accounts/${accountNumber}/movements/${movementType}`;
 
   const response = await axios.get(url, {
     params,
     headers: {
       'Authorization': `Bearer ${token}`,
-      'client_id': IB_CLIENT_ID,
+      'client_id': configValues.clientId,
       'Accept': 'application/json',
     },
     timeout: 30000,
@@ -392,4 +468,10 @@ module.exports = {
   getBalancesRange,
   getMovements,
   getAllMovements,
+  _internals: {
+    buildDateChunks,
+    getApiBaseUrl,
+    getConfig,
+    getMovementsBaseUrl,
+  },
 };

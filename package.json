@@ -4,6 +4,8 @@
   "description": "Ejemplo practico de uso de la API de Interbanking (Argentina) - saldos, movimientos, transferencias",
   "main": "interbanking.js",
   "scripts": {
+    "check": "node --check interbanking.js && node --check ejemplos/saldos.js && node --check ejemplos/movimientos.js && node --check ejemplos/movimientos-rango.js && node --check ejemplos/dashboard.js",
+    "test": "node --test",
     "saldos": "node ejemplos/saldos.js",
     "movimientos": "node ejemplos/movimientos.js",
     "movimientos-rango": "node ejemplos/movimientos-rango.js",
@@ -19,6 +21,9 @@
     "finanzas"
   ],
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "axios": "^1.7.0",
     "dotenv": "^16.0.0",

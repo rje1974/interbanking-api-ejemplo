@@ -117,7 +117,7 @@ npm run dashboard
 
 ```javascript
 require('dotenv').config();
-const { getBalances, getMovements, getAllMovements } = require('./interbanking');
+const { getBalances, getBalancesRange, getMovements, getAllMovements } = require('./interbanking');
 
 // Saldos de todas las cuentas
 const saldos = await getBalances();
@@ -135,6 +135,35 @@ const movimientos = await getMovements('000123456789', '007', {
 // Movimientos de TODAS las cuentas (descubre las cuentas automaticamente via saldos)
 const todos = await getAllMovements('2025-01-01', '2025-01-31');
 ```
+
+---
+
+## Validaciones y tests
+
+Este repo incluye tests offline para la logica que no requiere credenciales reales:
+
+```bash
+npm run check
+npm test
+```
+
+`npm run check` valida sintaxis con `node --check`. `npm test` usa `node:test` y cubre:
+
+- Variables de entorno requeridas.
+- `IB_REDIRECT_URL` con `https://`.
+- Derivacion de URL base para movimientos sin duplicar `/v1`.
+- Division de rangos largos de fechas en chunks sin solaparse.
+
+Los comandos `npm run saldos`, `npm run movimientos`, `npm run movimientos-rango` y `npm run dashboard` llaman a la API real y requieren `.env` completo.
+
+---
+
+## Seguridad
+
+- No commitees `.env` real ni variantes con credenciales.
+- No pegues tokens OAuth, Client Secret, saldos, movimientos, CUITs ni respuestas reales en issues, commits o ejemplos.
+- Si necesitas compartir un error, reemplaza credenciales y datos bancarios por placeholders.
+- El `Client Secret` se muestra una sola vez en el portal de Interbanking; guardalo en un gestor de secretos.
 
 ---
 
@@ -225,8 +254,9 @@ Si usas la variable `IB_API_BASE_URL` (que termina en `/v1`) para construir la U
 // Para saldos: usar IB_API_BASE_URL
 const saldosUrl = `${IB_API_BASE_URL}/accounts/balances`;
 
-// Para movimientos: usar URL base SIN /v1
-const movUrl = `https://api-gw.interbanking.com.ar/api/prod/v1/accounts/${account}/movements/${type}`;
+// Para movimientos: derivar URL base SIN /v1 y despues agregar el path /v1/...
+const apiBaseSinV1 = IB_API_BASE_URL.replace(/\/v1$/, '');
+const movUrl = `${apiBaseSinV1}/v1/accounts/${account}/movements/${type}`;
 ```
 
 ### 8. `account-number` en movimientos va en el PATH
