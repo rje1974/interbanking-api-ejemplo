@@ -6,6 +6,8 @@
  *   npm run saldos
  */
 
+require('dotenv').config();
+
 const { getBalances } = require('../interbanking');
 
 async function main() {

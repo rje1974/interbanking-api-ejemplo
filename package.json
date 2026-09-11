@@ -1,8 +1,14 @@
 {
-  "name": "interbanking-api-ejemplo",
-  "version": "1.0.0",
-  "description": "Ejemplo practico de uso de la API de Interbanking (Argentina) - saldos, movimientos, transferencias",
+  "name": "interbanking-client",
+  "version": "1.1.0",
+  "description": "Cliente Node.js para la API de Interbanking (Argentina) - saldos, movimientos y rangos largos, con los quirks del portal ya resueltos",
   "main": "interbanking.js",
+  "files": [
+    "interbanking.js",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "scripts": {
     "check": "node --check interbanking.js && node --check ejemplos/saldos.js && node --check ejemplos/movimientos.js && node --check ejemplos/movimientos-rango.js && node --check ejemplos/dashboard.js",
     "test": "node --test",
@@ -18,14 +24,26 @@
     "bancos",
     "saldos",
     "movimientos",
-    "finanzas"
+    "finanzas",
+    "conciliacion"
   ],
+  "author": "rje1974",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rje1974/interbanking-api-ejemplo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rje1974/interbanking-api-ejemplo/issues"
+  },
+  "homepage": "https://github.com/rje1974/interbanking-api-ejemplo#readme",
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "axios": "^1.7.0",
+    "axios": "^1.7.0"
+  },
+  "devDependencies": {
     "dotenv": "^16.0.0",
     "express": "^4.18.0"
   }

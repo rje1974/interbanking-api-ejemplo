@@ -13,6 +13,8 @@
  *   Abrir http://localhost:3000
  */
 
+require('dotenv').config();
+
 const express = require('express');
 const { getBalances, getBalancesRange } = require('../interbanking');
 

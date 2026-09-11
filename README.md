@@ -10,6 +10,14 @@ Ejemplo funcional para conectarse a la **API de Interbanking** (Argentina) y con
 
 Este proyecto nacio de meses de uso real de la API. La documentacion oficial es escasa y tiene varias trampas no documentadas. Este ejemplo las documenta todas.
 
+**Tres formas de usarlo:**
+
+| | Para que |
+|---|---|
+| **Leer este repo** | Entender la API y sus trampas antes de escribir tu propia integracion |
+| **`npm install interbanking-client`** | Usar el cliente ya hecho en tu proyecto Node |
+| **[`interbanking-mcp`](https://github.com/rje1974/interbanking-mcp)** | Consultar tus cuentas en castellano desde un agente de IA |
+
 ---
 
 ## Contenido
@@ -18,6 +26,7 @@ Este proyecto nacio de meses de uso real de la API. La documentacion oficial es 
 - [Registro en el portal de desarrolladores](#registro-en-el-portal-de-desarrolladores)
 - [Instalacion y configuracion](#instalacion-y-configuracion)
 - [Uso](#uso)
+- [Gestion de tokens y credenciales](#gestion-de-tokens-y-credenciales)
 - [Quirks y trampas (IMPORTANTE)](#quirks-y-trampas-importante)
 - [Estructura de respuestas](#estructura-de-respuestas)
 - [Errores comunes y soluciones](#errores-comunes-y-soluciones)
@@ -66,9 +75,30 @@ El Customer ID (codigo de abonado) no esta en el portal de desarrolladores. Lo e
 
 ## Instalacion y configuracion
 
+### Como paquete, en tu proyecto
+
+```bash
+npm install interbanking-client
+```
+
+```javascript
+const { createClient } = require('interbanking-client');
+
+const ib = createClient({
+  clientId: process.env.IB_CLIENT_ID,
+  clientSecret: process.env.IB_CLIENT_SECRET,
+  redirectUrl: process.env.IB_REDIRECT_URL,
+  customerId: process.env.IB_CUSTOMER_ID,
+});
+
+const saldos = await ib.getBalances();
+```
+
+### Clonando este repo, para leerlo y correr los ejemplos
+
 ```bash
 # Clonar o descargar el proyecto
-git clone https://github.com/tu-usuario/interbanking-api-ejemplo.git
+git clone https://github.com/rje1974/interbanking-api-ejemplo.git
 cd interbanking-api-ejemplo
 
 # Instalar dependencias
@@ -116,8 +146,34 @@ npm run dashboard
 ### Desde tu propio codigo
 
 ```javascript
+const { createClient } = require('interbanking-client');
+
+const ib = createClient({
+  clientId: '...', clientSecret: '...',
+  redirectUrl: 'https://localhost', customerId: '...',
+});
+
+const saldos = await ib.getBalances();
+const historico = await ib.getBalancesRange('2025-01-01', '2025-12-31');
+const movimientos = await ib.getMovements('000123456789', '007', {
+  dateSince: '2025-01-01', dateUntil: '2025-01-31',
+});
+const todos = await ib.getAllMovements('2025-01-01', '2025-01-31');
+```
+
+Lo que no le pases explicito lo toma de las variables de entorno, asi que si ya tenes el
+`.env` armado alcanza con `createClient()`.
+
+### Desde un agente de IA
+
+Con [`interbanking-mcp`](https://github.com/rje1974/interbanking-mcp) consultas tus
+cuentas preguntando en castellano, sin escribir codigo. Es de solo lectura.
+
+### Con las funciones sueltas (compatible con versiones anteriores)
+
+```javascript
 require('dotenv').config();
-const { getBalances, getBalancesRange, getMovements, getAllMovements } = require('./interbanking');
+const { getBalances, getBalancesRange, getMovements, getAllMovements } = require('interbanking-client');
 
 // Saldos de todas las cuentas
 const saldos = await getBalances();
@@ -153,17 +209,97 @@ npm test
 - `IB_REDIRECT_URL` con `https://`.
 - Derivacion de URL base para movimientos sin duplicar `/v1`.
 - Division de rangos largos de fechas en chunks sin solaparse.
+- Aislamiento del token entre clientes: dos `createClient` con credenciales distintas no
+  comparten token, y cada request usa el `customer-id` que le corresponde. Estos tests
+  levantan un servidor HTTP local que hace de Interbanking falso, asi que siguen siendo
+  offline.
 
 Los comandos `npm run saldos`, `npm run movimientos`, `npm run movimientos-rango` y `npm run dashboard` llaman a la API real y requieren `.env` completo.
 
 ---
 
-## Seguridad
+## Gestion de tokens y credenciales
 
-- No commitees `.env` real ni variantes con credenciales.
-- No pegues tokens OAuth, Client Secret, saldos, movimientos, CUITs ni respuestas reales en issues, commits o ejemplos.
-- Si necesitas compartir un error, reemplaza credenciales y datos bancarios por placeholders.
-- El `Client Secret` se muestra una sola vez en el portal de Interbanking; guardalo en un gestor de secretos.
+### Como funciona el token
+
+Interbanking usa OAuth2 con flujo `client_credentials`: no hay usuario que autorice nada
+en un navegador, tu aplicacion cambia `client_id` + `client_secret` por un token y listo.
+Es el flujo maquina-a-maquina, pensado para procesos automaticos.
+
+Tres cosas que la documentacion oficial no dice y te hacen perder una tarde:
+
+1. **Los parametros van en la query string, no en el body.** Es un POST, pero los
+   parametros viajan en la URL. Si los mandas en el body, falla sin explicar por que.
+2. **El header `service` tiene que incluir `https://`** y coincidir exactamente con la
+   Redirect URL del portal. Si no, `invalid_grant`.
+3. **El token dura 2 horas** (`expires_in: 7200`).
+
+El cliente se encarga de las tres.
+
+### Ciclo de vida
+
+El token se guarda **en memoria** y se renueva solo, un minuto antes de vencer:
+
+```javascript
+const ib = createClient({ ... });
+
+await ib.getBalances();   // pide el token
+await ib.getMovements();  // reutiliza el mismo
+// ... dos horas despues ...
+await ib.getBalances();   // lo renueva solo
+```
+
+No se persiste a disco a proposito. Un token es una credencial completa mientras vive:
+guardarlo en un archivo agrega una superficie de exposicion para ahorrar una llamada que
+tarda menos de un segundo y ocurre una vez cada dos horas. Si tu proceso es de vida corta
+(un cron que corre y termina), simplemente pide uno nuevo en cada corrida.
+
+### Varias empresas en el mismo proceso
+
+Cada cliente tiene su propio token. Dos clientes con credenciales distintas nunca se
+pisan, asi que podes consultar varias empresas en la misma corrida:
+
+```javascript
+const empresaA = createClient({ clientId: idA, clientSecret: secretA, customerId: custA, redirectUrl });
+const empresaB = createClient({ clientId: idB, clientSecret: secretB, customerId: custB, redirectUrl });
+
+const [saldosA, saldosB] = await Promise.all([
+  empresaA.getBalances(),
+  empresaB.getBalances(),
+]);
+```
+
+Cada empresa necesita su propia aplicacion en el portal y su propio `customer-id`. **No
+compartas credenciales entre empresas**: ademas de ser mala idea, el `customer-id` define
+que cuentas ves.
+
+### Donde viven las credenciales
+
+| Escenario | Donde | Cuidado |
+|---|---|---|
+| Script o proyecto propio | `.env` en la raiz, fuera de git | Que `.gitignore` lo incluya |
+| Cron o servicio | Variables de entorno del proceso o un archivo de secretos con permisos `600` | Que no queden en el `ps` ni en los logs |
+| Servidor MCP | El archivo de configuracion del cliente MCP | **Es texto plano en tu disco**, ver abajo |
+| CI | El gestor de secretos de la plataforma | Nunca en el YAML |
+
+Sobre el **MCP**: la configuracion de Claude Desktop y similares es un JSON sin cifrar en
+tu carpeta de usuario. Para credenciales de solo lectura sobre tus propias cuentas suele
+ser un riesgo aceptable, pero conviene saberlo antes de pegarlas: cualquier proceso que
+corra como tu usuario puede leer ese archivo. Si tu sistema operativo ofrece un llavero,
+es mejor lugar.
+
+### Que no hacer
+
+- **No commitear `.env`** ni variantes con credenciales.
+- **No loguear el token.** El cliente informa cuando vence, nunca su valor.
+- **No pegar** tokens, Client Secret, saldos, movimientos, CUIT ni respuestas reales en
+  issues, commits o ejemplos. Si necesitas mostrar un error, reemplazalos por
+  placeholders.
+- **No compartir un cliente entre empresas** cambiandole las credenciales: crea uno por
+  empresa.
+
+El `Client Secret` **se muestra una sola vez** al crear la aplicacion en el portal.
+Guardalo en un gestor de secretos apenas lo veas: si lo perdes, hay que regenerarlo.
 
 ---
 

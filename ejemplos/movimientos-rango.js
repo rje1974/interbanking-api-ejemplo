@@ -11,6 +11,8 @@
  *   npm run movimientos-rango
  */
 
+require('dotenv').config();
+
 const { getBalances, getMovements } = require('../interbanking');
 
 const CHUNK_DAYS = 60; // Margen por debajo del limite de 64 dias

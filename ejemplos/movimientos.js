@@ -9,6 +9,8 @@
  * y muestra los movimientos de los ultimos 30 dias.
  */
 
+require('dotenv').config();
+
 const { getBalances, getMovements } = require('../interbanking');
 
 async function main() {
