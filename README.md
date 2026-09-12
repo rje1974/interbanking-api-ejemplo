@@ -1,20 +1,21 @@
-# Interbanking API - Ejemplo practico (Argentina)
+# API de Interbanking — cliente y manual (Argentina)
 
+[![npm](https://img.shields.io/npm/v/interbanking-client)](https://www.npmjs.com/package/interbanking-client)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![API](https://img.shields.io/badge/Interbanking-API%20v1-orange)
 
-Ejemplo funcional para conectarse a la **API de Interbanking** (Argentina) y consultar saldos y movimientos de todas tus cuentas bancarias desde codigo.
+Cliente y documentación para conectarse a la **API de Interbanking** (Argentina) y consultar saldos y movimientos de todas tus cuentas bancarias desde código.
 
-> **Interbanking** es una plataforma que conecta empresas con multiples bancos argentinos desde un solo lugar. Su API permite consultar saldos, movimientos, extractos y confeccionar transferencias de forma programatica.
+> **Interbanking** es una plataforma que conecta empresas con múltiples bancos argentinos desde un solo lugar. Su API permite consultar saldos, movimientos, extractos y confeccionar transferencias de forma programática.
 
-Este proyecto nacio de meses de uso real de la API. La documentacion oficial es escasa y tiene varias trampas no documentadas. Este ejemplo las documenta todas.
+Este proyecto nació de meses de uso real de la API. La documentación oficial es escasa y tiene varias trampas no documentadas. Este ejemplo las documenta todas.
 
 **Tres formas de usarlo:**
 
-| | Para que |
+| | Para qué |
 |---|---|
-| **Leer este repo** | Entender la API y sus trampas antes de escribir tu propia integracion |
+| **Leer este repo** | Entender la API y sus trampas antes de escribir tu propia integración |
 | **`npm install interbanking-client`** | Usar el cliente ya hecho en tu proyecto Node |
 | **[`interbanking-mcp`](https://github.com/rje1974/interbanking-mcp)** | Consultar tus cuentas en castellano desde un agente de IA |
 
@@ -24,9 +25,9 @@ Este proyecto nacio de meses de uso real de la API. La documentacion oficial es 
 
 - [Requisitos previos](#requisitos-previos)
 - [Registro en el portal de desarrolladores](#registro-en-el-portal-de-desarrolladores)
-- [Instalacion y configuracion](#instalacion-y-configuracion)
+- [Instalación y configuración](#instalación-y-configuración)
 - [Uso](#uso)
-- [Gestion de tokens y credenciales](#gestion-de-tokens-y-credenciales)
+- [Gestión de tokens y credenciales](#gestión-de-tokens-y-credenciales)
 - [Quirks y trampas (IMPORTANTE)](#quirks-y-trampas-importante)
 - [Estructura de respuestas](#estructura-de-respuestas)
 - [Errores comunes y soluciones](#errores-comunes-y-soluciones)
@@ -46,34 +47,34 @@ Este proyecto nacio de meses de uso real de la API. La documentacion oficial es 
 
 ### 1. Crear cuenta en el portal
 
-Anda a [https://developers.interbanking.com.ar/api/prod/](https://developers.interbanking.com.ar/api/prod/) y registrate con tu email corporativo.
+Andá a [https://developers.interbanking.com.ar/api/prod/](https://developers.interbanking.com.ar/api/prod/) y registrate con tu email corporativo.
 
-### 2. Crear una aplicacion
+### 2. Crear una aplicación
 
-1. En el portal, anda a **Aplicaciones** > **Crear nueva aplicacion**
+1. En el portal, andá a **Aplicaciones** > **Crear nueva aplicación**
 2. Ponele un nombre descriptivo (ej: "Mi Dashboard Financiero")
-3. Configura la **Redirect URL** (puede ser `https://localhost` si no necesitas OAuth interactivo)
+3. Configurá la **Redirect URL** (puede ser `https://localhost` si no necesitás OAuth interactivo)
 4. Al crear la app te van a mostrar el **Client ID** (API Key) y el **Client Secret**
 5. **IMPORTANTE:** El Client Secret se muestra **una sola vez**. Copialo y guardalo en un lugar seguro
 
-### 3. Suscribirse al plan "Informacion Financiera"
+### 3. Suscribirse al plan "Información Financiera"
 
-1. En el portal, anda a **Productos de API**
-2. Busca el plan **Informacion Financiera** ([link directo](https://developers.interbanking.com.ar/api/prod/product/3178))
-3. Suscribi tu aplicacion al plan
+1. En el portal, andá a **Productos de API**
+2. Buscá el plan **Información Financiera** ([link directo](https://developers.interbanking.com.ar/api/prod/product/3178))
+3. Suscribí tu aplicación al plan
 4. Este plan incluye: Saldos, Movimientos, Extractos
 
 ### 4. Obtener el Customer ID
 
-El Customer ID (codigo de abonado) no esta en el portal de desarrolladores. Lo encontras en:
+El Customer ID (código de abonado) no está en el portal de desarrolladores. Lo encontrás en:
 
-1. Entra a la **web de Interbanking** (no el portal de desarrolladores)
-2. Anda a **Administracion** > **Bancos y cuentas**
-3. Ahi vas a ver tu codigo de suscriptor/abonado (ej: `E12345A`)
+1. Entrá a la **web de Interbanking** (no el portal de desarrolladores)
+2. Andá a **Administración** > **Bancos y cuentas**
+3. Ahí vas a ver tu código de suscriptor/abonado (ej: `E12345A`)
 
 ---
 
-## Instalacion y configuracion
+## Instalación y configuración
 
 ### Como paquete, en tu proyecto
 
@@ -111,13 +112,13 @@ cp .env.example .env
 
 ### Variables de entorno (.env)
 
-| Variable | Descripcion | Donde encontrarla |
+| Variable | Descripción | Donde encontrarla |
 |----------|-------------|-------------------|
-| `IB_CLIENT_ID` | API Key de tu aplicacion | Portal > Aplicaciones > tu app |
+| `IB_CLIENT_ID` | API Key de tu aplicación | Portal > Aplicaciones > tu app |
 | `IB_CLIENT_SECRET` | Secret de la app (se muestra 1 sola vez) | Portal > al crear la app |
-| `IB_REDIRECT_URL` | URL de redireccion OAuth | Portal > configuracion de la app |
-| `IB_CUSTOMER_ID` | Codigo de suscriptor/abonado | Interbanking web > Administracion > Bancos y cuentas |
-| `IB_TOKEN_URL` | URL de autenticacion | Siempre `https://auth.interbanking.com.ar/cas/oidc/accessToken` |
+| `IB_REDIRECT_URL` | URL de redirección OAuth | Portal > configuración de la app |
+| `IB_CUSTOMER_ID` | Código de suscriptor/abonado | Interbanking web > Administración > Bancos y cuentas |
+| `IB_TOKEN_URL` | URL de autenticación | Siempre `https://auth.interbanking.com.ar/cas/oidc/accessToken` |
 | `IB_API_BASE_URL` | URL base de la API | Siempre `https://api-gw.interbanking.com.ar/api/prod/v1` |
 
 ---
@@ -143,7 +144,7 @@ npm run dashboard
 # Abrir http://localhost:3000
 ```
 
-### Desde tu propio codigo
+### Desde tu propio código
 
 ```javascript
 const { createClient } = require('interbanking-client');
@@ -161,13 +162,13 @@ const movimientos = await ib.getMovements('000123456789', '007', {
 const todos = await ib.getAllMovements('2025-01-01', '2025-01-31');
 ```
 
-Lo que no le pases explicito lo toma de las variables de entorno, asi que si ya tenes el
+Lo que no le pases explícito lo toma de las variables de entorno, así que si ya tenés el
 `.env` armado alcanza con `createClient()`.
 
 ### Desde un agente de IA
 
 Con [`interbanking-mcp`](https://github.com/rje1974/interbanking-mcp) consultas tus
-cuentas preguntando en castellano, sin escribir codigo. Es de solo lectura.
+cuentas preguntando en castellano, sin escribir código. Es de solo lectura.
 
 ### Con las funciones sueltas (compatible con versiones anteriores)
 
@@ -196,7 +197,7 @@ const todos = await getAllMovements('2025-01-01', '2025-01-31');
 
 ## Validaciones y tests
 
-Este repo incluye tests offline para la logica que no requiere credenciales reales:
+Este repo incluye tests offline para la lógica que no requiere credenciales reales:
 
 ```bash
 npm run check
@@ -207,29 +208,29 @@ npm test
 
 - Variables de entorno requeridas.
 - `IB_REDIRECT_URL` con `https://`.
-- Derivacion de URL base para movimientos sin duplicar `/v1`.
-- Division de rangos largos de fechas en chunks sin solaparse.
+- Derivación de URL base para movimientos sin duplicar `/v1`.
+- División de rangos largos de fechas en chunks sin solaparse.
 - Aislamiento del token entre clientes: dos `createClient` con credenciales distintas no
   comparten token, y cada request usa el `customer-id` que le corresponde. Estos tests
-  levantan un servidor HTTP local que hace de Interbanking falso, asi que siguen siendo
+  levantan un servidor HTTP local que hace de Interbanking falso, así que siguen siendo
   offline.
 
 Los comandos `npm run saldos`, `npm run movimientos`, `npm run movimientos-rango` y `npm run dashboard` llaman a la API real y requieren `.env` completo.
 
 ---
 
-## Gestion de tokens y credenciales
+## Gestión de tokens y credenciales
 
 ### Como funciona el token
 
 Interbanking usa OAuth2 con flujo `client_credentials`: no hay usuario que autorice nada
-en un navegador, tu aplicacion cambia `client_id` + `client_secret` por un token y listo.
+en un navegador, tu aplicación cambia `client_id` + `client_secret` por un token y listo.
 Es el flujo maquina-a-maquina, pensado para procesos automaticos.
 
-Tres cosas que la documentacion oficial no dice y te hacen perder una tarde:
+Tres cosas que la documentación oficial no dice y te hacen perder una tarde:
 
-1. **Los parametros van en la query string, no en el body.** Es un POST, pero los
-   parametros viajan en la URL. Si los mandas en el body, falla sin explicar por que.
+1. **Los parámetros van en la query string, no en el body.** Es un POST, pero los
+   parámetros viajan en la URL. Si los mandás en el body, falla sin explicar por qué.
 2. **El header `service` tiene que incluir `https://`** y coincidir exactamente con la
    Redirect URL del portal. Si no, `invalid_grant`.
 3. **El token dura 2 horas** (`expires_in: 7200`).
@@ -257,7 +258,7 @@ tarda menos de un segundo y ocurre una vez cada dos horas. Si tu proceso es de v
 ### Varias empresas en el mismo proceso
 
 Cada cliente tiene su propio token. Dos clientes con credenciales distintas nunca se
-pisan, asi que podes consultar varias empresas en la misma corrida:
+pisan, así que podés consultar varias empresas en la misma corrida:
 
 ```javascript
 const empresaA = createClient({ clientId: idA, clientSecret: secretA, customerId: custA, redirectUrl });
@@ -269,8 +270,8 @@ const [saldosA, saldosB] = await Promise.all([
 ]);
 ```
 
-Cada empresa necesita su propia aplicacion en el portal y su propio `customer-id`. **No
-compartas credenciales entre empresas**: ademas de ser mala idea, el `customer-id` define
+Cada empresa necesita su propia aplicación en el portal y su propio `customer-id`. **No
+compartas credenciales entre empresas**: además de ser mala idea, el `customer-id` define
 que cuentas ves.
 
 ### Donde viven las credenciales
@@ -279,10 +280,10 @@ que cuentas ves.
 |---|---|---|
 | Script o proyecto propio | `.env` en la raiz, fuera de git | Que `.gitignore` lo incluya |
 | Cron o servicio | Variables de entorno del proceso o un archivo de secretos con permisos `600` | Que no queden en el `ps` ni en los logs |
-| Servidor MCP | El archivo de configuracion del cliente MCP | **Es texto plano en tu disco**, ver abajo |
+| Servidor MCP | El archivo de configuración del cliente MCP | **Es texto plano en tu disco**, ver abajo |
 | CI | El gestor de secretos de la plataforma | Nunca en el YAML |
 
-Sobre el **MCP**: la configuracion de Claude Desktop y similares es un JSON sin cifrar en
+Sobre el **MCP**: la configuración de Claude Desktop y similares es un JSON sin cifrar en
 tu carpeta de usuario. Para credenciales de solo lectura sobre tus propias cuentas suele
 ser un riesgo aceptable, pero conviene saberlo antes de pegarlas: cualquier proceso que
 corra como tu usuario puede leer ese archivo. Si tu sistema operativo ofrece un llavero,
@@ -298,18 +299,18 @@ es mejor lugar.
 - **No compartir un cliente entre empresas** cambiandole las credenciales: crea uno por
   empresa.
 
-El `Client Secret` **se muestra una sola vez** al crear la aplicacion en el portal.
-Guardalo en un gestor de secretos apenas lo veas: si lo perdes, hay que regenerarlo.
+El `Client Secret` **se muestra una sola vez** al crear la aplicación en el portal.
+Guardalo en un gestor de secretos apenas lo veas: si lo perdés, hay que regenerarlo.
 
 ---
 
 ## Quirks y trampas (IMPORTANTE)
 
-Esta es la seccion mas valiosa de este proyecto. Estas son cosas que descubri a fuerza de prueba y error, porque la documentacion oficial no las menciona o las explica mal.
+Esta es la sección más valiosa de este proyecto. Estas son cosas que descubrí a fuerza de prueba y error, porque la documentación oficial no las menciona o las explica mal.
 
-### 1. Token: los parametros van en la URL, NO en el body
+### 1. Token: los parámetros van en la URL, NO en el body
 
-A diferencia de la mayoria de las APIs OAuth2, Interbanking requiere que los parametros del token request vayan como **query string** en la URL, no en el body del POST.
+A diferencia de la mayoria de las APIs OAuth2, Interbanking requiere que los parámetros del token request vayan como **query string** en la URL, no en el body del POST.
 
 ```javascript
 // MAL - esto da error
@@ -342,7 +343,7 @@ headers: {
 
 ### 3. `customer-id` va como query parameter, no como header
 
-En cada llamada a la API, el `customer-id` (codigo de abonado) tiene que ir como **query parameter**, no como header. Si lo mandas como header, te devuelve error 400.
+En cada llamada a la API, el `customer-id` (código de abonado) tiene que ir como **query parameter**, no como header. Si lo mandás como header, te devuelve error 400.
 
 ```
 // BIEN
@@ -355,7 +356,7 @@ Headers: customer-id: E12345A
 
 ### 4. Header `client_id` obligatorio en cada llamada
 
-Ademas del Bearer token, cada llamada a la API requiere un header `client_id` con tu API Key. Esto es un requerimiento del gateway IBM API Connect que usa Interbanking. Sin este header, te devuelve `401 - Client id missing`.
+Además del Bearer token, cada llamada a la API requiere un header `client_id` con tu API Key. Esto es un requerimiento del gateway IBM API Connect que usa Interbanking. Sin este header, te devuelve `401 - Client id missing`.
 
 ```javascript
 headers: {
@@ -366,15 +367,15 @@ headers: {
 
 ### 5. El token dura 2 horas (7200 segundos)
 
-El token expira a las 2 horas. El modulo `interbanking.js` incluido lo cachea automaticamente y lo renueva 1 minuto antes de que expire.
+El token expira a las 2 horas. El módulo `interbanking.js` incluido lo cachea automáticamente y lo renueva 1 minuto antes de que expire.
 
-### 6. Rango maximo de fechas: 64 dias por request
+### 6. Rango máximo de fechas: 64 días por request
 
-Si pedis saldos o movimientos con un rango mayor a 64 dias, la API devuelve error. Para rangos mas largos, hay que dividir en chunks de 60 dias y unificar los resultados. La funcion `getBalancesRange()` ya hace esto automaticamente.
+Si pedís saldos o movimientos con un rango mayor a 64 días, la API devuelve error. Para rangos más largos, hay que dividir en chunks de 60 días y unificar los resultados. La función `getBalancesRange()` ya hace esto automáticamente.
 
 ### 7. Movimientos usa una URL base DISTINTA a saldos
 
-Esta es la trampa mas dificil de encontrar:
+Esta es la trampa más difícil de encontrar:
 
 ```
 # Saldos - usa IB_API_BASE_URL completa (termina en /v1)
@@ -384,7 +385,7 @@ GET https://api-gw.interbanking.com.ar/api/prod/v1/accounts/balances
 GET https://api-gw.interbanking.com.ar/api/prod/v1/accounts/{account}/movements/{type}
 ```
 
-Si usas la variable `IB_API_BASE_URL` (que termina en `/v1`) para construir la URL de movimientos, te queda `/v1/v1/accounts/...` y te da **404**. La solucion es usar la URL base sin `/v1` para movimientos:
+Si usás la variable `IB_API_BASE_URL` (que termina en `/v1`) para construir la URL de movimientos, te queda `/v1/v1/accounts/...` y te da **404**. La solución es usar la URL base sin `/v1` para movimientos:
 
 ```javascript
 // Para saldos: usar IB_API_BASE_URL
@@ -397,7 +398,7 @@ const movUrl = `${apiBaseSinV1}/v1/accounts/${account}/movements/${type}`;
 
 ### 8. `account-number` en movimientos va en el PATH
 
-En el endpoint de saldos, no necesitas especificar un numero de cuenta (te devuelve todas). Pero en movimientos, el numero de cuenta va **en el path de la URL**, no como query parameter ni header.
+En el endpoint de saldos, no necesitas especificar un número de cuenta (te devuelve todas). Pero en movimientos, el número de cuenta va **en el path de la URL**, no como query parameter ni header.
 
 ```
 // BIEN
@@ -409,15 +410,15 @@ GET /v1/accounts/movements/anteriores?account-number=000123456789
 
 ### 9. Tipos de movimiento: `dia`, `anteriores`, `diferidos`
 
-El ultimo segmento de la URL de movimientos indica el tipo:
+El último segmento de la URL de movimientos indica el tipo:
 
-| Tipo | Descripcion |
+| Tipo | Descripción |
 |------|-------------|
 | `dia` | Movimientos del dia actual |
-| `anteriores` | Movimientos de dias anteriores (historicos) |
+| `anteriores` | Movimientos de días anteriores (históricos) |
 | `diferidos` | Movimientos diferidos/pendientes |
 
-### 10. Los numeros de cuenta de saldos son los mismos que se usan en movimientos
+### 10. Los números de cuenta de saldos son los mismos que se usan en movimientos
 
 El campo `account_number` que devuelve `/accounts/balances` es exactamente el mismo que se usa en el path de `/accounts/{account-number}/movements/...`. No hay que transformarlo ni formatearlo.
 
@@ -463,9 +464,9 @@ El campo `account_number` que devuelve `/accounts/balances` es exactamente el mi
 }
 ```
 
-**Codigos de banco comunes:**
+**Códigos de banco comunes:**
 
-| Codigo | Banco |
+| Código | Banco |
 |--------|-------|
 | 007 | Banco Galicia |
 | 011 | Banco de la Nacion Argentina |
@@ -510,12 +511,12 @@ El campo `account_number` que devuelve `/accounts/balances` es exactamente el mi
 
 **Campos importantes de movimientos:**
 
-| Campo | Descripcion |
+| Campo | Descripción |
 |-------|-------------|
-| `amount` | Monto (negativo = debito, positivo = credito) |
-| `debit_credit_type` | `D` = debito, `C` = credito |
-| `code_description_ib` | Descripcion estandarizada por Interbanking |
-| `code_description_bank` | Descripcion original del banco |
+| `amount` | Monto (negativo = débito, positivo = crédito) |
+| `debit_credit_type` | `D` = débito, `C` = crédito |
+| `code_description_ib` | Descripción estandarizada por Interbanking |
+| `code_description_bank` | Descripción original del banco |
 | `customer_cuit` | CUIT del tercero (si aplica) |
 | `depositor_description` | Nombre del tercero |
 
@@ -523,7 +524,7 @@ El campo `account_number` que devuelve `/accounts/balances` es exactamente el mi
 
 ## Errores comunes y soluciones
 
-| Error | Causa | Solucion |
+| Error | Causa | Solución |
 |-------|-------|----------|
 | `400 - One or more required API parameters are missing` | Falta `customer-id` en los query params | Agregar `?customer-id=TU_CODIGO` a la URL |
 | `401 - Client id missing` | Falta el header `client_id` | Agregar header `client_id: TU_API_KEY` |
@@ -532,17 +533,17 @@ El campo `account_number` que devuelve `/accounts/balances` es exactamente el mi
 | `404 - Not Found` | URL con `/v1` duplicado | Usar base URL sin `/v1` para movimientos (ver Quirk #7) |
 | `400 - Error en parametro account-number` | account-number como query/header | Moverlo al PATH de la URL (ver Quirk #8) |
 | `invalid_grant` | Header `service` sin `https://` | Agregar `https://` al header `service` |
-| `400 - Date range exceeded` | Rango mayor a 64 dias | Dividir en chunks de 60 dias (ver Quirk #6) |
+| `400 - Date range exceeded` | Rango mayor a 64 días | Dividir en chunks de 60 días (ver Quirk #6) |
 
 ---
 
 ## APIs disponibles en Interbanking
 
-Con la suscripcion al plan **Informacion Financiera** tenes acceso a:
+Con la suscripción al plan **Información Financiera** tenés acceso a:
 
-| API | Endpoint | Descripcion |
+| API | Endpoint | Descripción |
 |-----|----------|-------------|
-| Saldos | `GET /accounts/balances` | Saldos actuales e historicos de todas las cuentas |
+| Saldos | `GET /accounts/balances` | Saldos actuales e históricos de todas las cuentas |
 | Movimientos | `GET /accounts/{account}/movements/{type}` | Movimientos por cuenta y tipo |
 | Extractos | `GET /accounts/{account}/statements/...` | Extractos bancarios |
 | Transferencias | `POST /transfers` | Confeccion de transferencias |
