@@ -557,6 +557,20 @@ Con la suscripción al plan **Información Financiera** tenés acceso a:
 
 ---
 
+## Soporte
+
+Esto se publica tal cual está. Las consultas van por los issues del repo, sin plazo
+de respuesta: lo contesto cuando puedo. No hay soporte por correo ni por teléfono.
+
+Las APIs de terceros cambian sin avisar y pueden romperlo. No es asesoramiento
+profesional — el uso es responsabilidad de quien lo usa.
+
+## Si te sirvió
+
+⭐ Dejame una estrella en el repo o invitame [un cafecito](https://cafecito.app/rje1974).
+
+(O escribime y charlamos, también vale.)
+
 ## Licencia
 
 MIT - Ver [LICENSE](LICENSE)
@@ -572,4 +586,3 @@ Los quirks y soluciones documentados en este repo fueron descubiertos durante el
 ---
 
 > Hecho con mate, paciencia y muchas horas de prueba y error contra la API de Interbanking.
-> Si te sirvió, dejale una ⭐ al repo.
