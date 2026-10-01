@@ -1,5 +1,7 @@
 # API de Interbanking — cliente y manual (Argentina)
 
+> **Proyecto independiente y no oficial.** No tiene vinculación con Interbanking S.A. ni está avalado por esa empresa. "Interbanking" es una marca registrada de su titular y se menciona solo para indicar con qué API funciona.
+
 [![npm](https://img.shields.io/npm/v/interbanking-client)](https://www.npmjs.com/package/interbanking-client)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![License](https://img.shields.io/badge/License-MIT-blue)
